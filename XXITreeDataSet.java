@@ -344,8 +344,18 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
     }
 
     /** */
-    public boolean isMarkItem( ITreeDataSetItem<P> item ) {
-        return isSupportMark() && item != null && ( (IMarkable)item.getValue() ).isMark();
+    public boolean isMarkItem( ITreeDataSetItem<P> item )
+    {
+
+        if (!isSupportMark()
+                || item == null
+                || item.getDataSet() != this) {
+            return false;
+        }
+
+        final P value = item.getValue();
+
+        return value instanceof IMarkable && ((IMarkable) value).isMark();
     }
 
     /** {@inheritDoc } */
@@ -456,24 +466,33 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
     }
 
     /** */
-    public Iterator<P> getMarkedRowIterator()
-    {
-        if( !hasMarkedItems() )
+    public Iterator<P> getMarkedRowIterator() {
+
+        if (!hasMarkedItems()) {
             return Collections.emptyIterator();
+        }
 
-        final List<P> markedList = new ArrayList<>();
+        final List<P> markedList = new ArrayList<>(markedCount);
 
-        traversal(new Function< ITreeDataSetItem< P >, Boolean >() {
-            @Override
-            public Boolean apply( ITreeDataSetItem<P> item ) {
-                if( ((IMarkable)item.getValue()).isMark() )
-                    markedList.add(item.getValue());
+        traversal(item -> {
+
+            if (item == null) {
                 return true;
             }
+
+            final P value = item.getValue();
+
+            if (value instanceof IMarkable
+                    && ((IMarkable) value).isMark()) {
+                markedList.add(value);
+            }
+
+            return true;
         });
 
         return markedList.iterator();
     }
+
 
     /** */
     public boolean isEnableMark() {
