@@ -9,6 +9,7 @@ import ru.inversion.dataset.mark.MarkDescriptor;
 import ru.inversion.dataset.mark.MarkModeEnum;
 import ru.inversion.meta.EntityMetadataFactory;
 import ru.inversion.tc.TaskContext;
+import ru.inversion.utils.S;
 import ru.inversion.utils.Tags;
 import ru.inversion.utils.U;
 import ru.inversion.utils.lstn.IListenerManEvent;
@@ -411,10 +412,7 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
             fireMarkDataSetEvent(MARK_ALL, false, leafOnly);
         }
         catch (Throwable th) {
-            throw new TreeDataSetException(
-                    Tags.PRODUCT_LABEL + "Error on markAll",
-                    th
-            );
+            throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Error on markAll", th );
         }
     }
 
@@ -424,7 +422,7 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
     }
 
 
-    /** {@inheritDoc } */
+    /** */
     public void unMarkAll() {
 
         if( !isSupportMark() )
@@ -447,10 +445,7 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
             fireMarkDataSetEvent( UNMARK_ALL, false, false );
         }
         catch (Throwable th) {
-            throw new TreeDataSetException(
-                    Tags.PRODUCT_LABEL + "Error on clearMark",
-                    th
-            );
+            throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Error on unMarkAll", th );
         }
     }
 
@@ -477,24 +472,20 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
     /** */
     public Iterator<P> getMarkedRowIterator() {
 
-        if (!hasMarkedItems()) {
+        if( !hasMarkedItems() )
             return Collections.emptyIterator();
-        }
 
         final List<P> markedList = new ArrayList<>(markedCount);
 
         traversal(item -> {
 
-            if (item == null) {
+            if( item == null )
                 return true;
-            }
 
             final P value = item.getValue();
 
-            if (value instanceof IMarkable
-                    && ((IMarkable) value).isMark()) {
+            if( value instanceof IMarkable && ((IMarkable) value).isMark() )
                 markedList.add(value);
-            }
 
             return true;
         });
@@ -515,42 +506,31 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
 
     /** {@inheritDoc } */
     @Override
-    protected String getMarkSQLPart( )
+    protected String getMarkSQLPart()
     {
-        if( !isSupportMark() || getMarkerId( ) == null )
+        if( !isSupportMark() || getMarkerId() == null )
             return null;
 
-        if( sql4MarkColumn == null)
+        if( sql4MarkColumn == null )
         {
-            final String pkColumns[] = markDescriptor.getMarkKeyColumns( );
-            StringBuilder sb = new StringBuilder();
+            final String[] pkColumns   = markDescriptor.getMarkKeyColumns();
+            final String markKeyColumn = "qrslt." + pkColumns[0];
 
-            if ( markDescriptor.getMarkMode() == MRK )
-            {
-                sb.append( "nvl( (select 1 from dual where exists ( select 1 from v_jf_mrk a$ where a$.IMRKMARKERID = :jinv_marker_id" )
-                        .append( " and a$.RMRKROWID = ")
-                        .append( pkColumns[0] )
-                        .append( ")),0) ");
+            final StringBuilder sb = new StringBuilder();
 
+            switch (markDescriptor.getMarkMode()) {
+                case MRK:
+                    sb.append("nvl((select 1 from dual where exists (select 1 from v_jf_mrk a$ where a$.IMRKMARKERID = :jinv_marker_id and a$.RMRKROWID = ").append(markKeyColumn).append(")),0) ");
+                    break;
+                case MRK_ID:
+                    sb.append("nvl((select 1 from dual where exists ( select 1 from v_jf_mrk_id a$ where a$.idmarker = :jinv_marker_id and a$.idrow = ").append(markKeyColumn).append(")),0) ");
+                    break;
+                case MRK_U:
+                    sb.append( "nvl((select 1 from dual where exists ( select 1 from v_jf_mrk_u a$ where a$.idmarker = :jinv_marker_id and a$.UROW = ").append(markKeyColumn).append(")),0) ");
+                    break;
+                default:
+                    throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Unsupported mark mode: " + markDescriptor.getMarkMode() );
             }
-            else
-            {
-                if( markDescriptor.getMarkMode() == MRK_ID )
-                {
-                    sb.append("nvl((select 1 from dual where exists ( select 1 from v_jf_mrk_id a$ where a$.idmarker = :jinv_marker_id")
-                            .append(" and a$.idrow = ")
-                            .append(pkColumns[0])
-                            .append(")),0) ");
-                }
-                else
-                if ( markDescriptor.getMarkMode() == MRK_U ) {
-                    sb.append("nvl((select 1 from dual where exists ( select 1 from v_jf_mrk_u a$ where a$.idmarker = :jinv_marker_id")
-                            .append(" and a$.UROW = ")
-                            .append( pkColumns[0] )
-                            .append(")),0) ");
-                }
-
-            }//end else
 
             sb.append(IMarkable.MARK_COLUMN).append('\n');
 
@@ -559,7 +539,6 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
 
         return sql4MarkColumn;
     }
-
     /**
      * Первое выполнение запроса dataSet
      * загружаем авто-фильтр
