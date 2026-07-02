@@ -7,9 +7,7 @@ import ru.inversion.dataset.impl.XXIDsMarkerDao;
 import ru.inversion.dataset.mark.IMarkable;
 import ru.inversion.dataset.mark.MarkDescriptor;
 import ru.inversion.dataset.mark.MarkModeEnum;
-import ru.inversion.meta.EntityMetadataFactory;
 import ru.inversion.tc.TaskContext;
-import ru.inversion.utils.S;
 import ru.inversion.utils.Tags;
 import ru.inversion.utils.U;
 import ru.inversion.utils.lstn.IListenerManEvent;
@@ -19,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 
 import static ru.inversion.dataset.DataSetMarkEvent.MarkActionEnum.*;
 import static ru.inversion.dataset.mark.MarkModeEnum.*;
@@ -33,22 +30,16 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
     final private IListenerManEvent< ITreeDataSetMarkListener<P>, TreeDataSetMarkEvent<P> > markListeners =
             ListenerManFactory.createListenerManEvent(ITreeDataSetMarkListener::markAction);
 
-    /**
-     * Признак используется ли автофильтр.
-     */
+    /** Признак используется ли автофильтр. */
     private boolean enableAutoFilter = false;
 
-    /**
-     * ID маркера пометки.
-     */
+    /** ID маркера пометки. */
     protected Long markerId;
 
-    /** Кол-во помеченых записей */
+    /** Кол-во помеченных записей */
     transient private int markedCount = 0;
 
-    /**
-     * Параметры пометки для XXIDataSet.
-     */
+    /** Параметры пометки для XXIDataSet. */
     private MarkDescriptor markDescriptor = MarkDescriptor.g_emptyInstance;
 
     /** */
@@ -66,13 +57,27 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
         setTaskContext(tc);
     }
 
+
+    @Override
+    public void setTaskContext(TaskContext taskContext) {
+
+        final TaskContext currentTaskContext = getTaskContext();
+
+        if( currentTaskContext == taskContext )
+            return;
+
+        if( currentTaskContext != null && (getMarkerId() != null || !isEmpty()) )
+            throw new IllegalStateException( Tags.PRODUCT_LABEL + "TaskContext cannot be changed while XXITreeDataSet has a marker ID or loaded rows" );
+
+        super.setTaskContext(taskContext);
+    }
+
+
     /** */
     protected void fireMarkDataSetEvent( DataSetMarkEvent.MarkActionEnum markAction, boolean before, boolean leafOnly ) {
 
         if( isSupportMark() && !markListeners.isEmpty() )
-        {
             markListeners.fire( new TreeDataSetMarkEvent<>( this, markAction, before, markedCount, leafOnly) );
-        }
     }
 
     /**
@@ -539,12 +544,14 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
 
         return sql4MarkColumn;
     }
+
+
     /**
      * Первое выполнение запроса dataSet
      * загружаем авто-фильтр
      */
-    protected void onBeforeFirstExecute( )  {
-
+    protected void onBeforeFirstExecute( )
+    {
         if( isEnableAutoFilter() )
         {
             String name = this.getName();
