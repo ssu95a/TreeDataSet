@@ -343,6 +343,7 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
         doMark( getCurrentItem(), false );
     }
 
+
     /** */
     public boolean isMarkItem( ITreeDataSetItem<P> item )
     {
@@ -358,21 +359,20 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
         return value instanceof IMarkable && ((IMarkable) value).isMark();
     }
 
-    /** {@inheritDoc } */
+
+    /** */
     public boolean isMarkCurrentItem( ) {
         return isMarkItem( getCurrentItem() );
     }
 
 
     /** */
-    public void markAll(boolean leafOnly) {
-
-        if (!isSupportMark() || isEmpty()) {
+    public void markAll( boolean leafOnly )
+    {
+        if( !isSupportMark() || isEmpty() )
             return;
-        }
 
         try {
-            fireMarkDataSetEvent(MARK_ALL, true, leafOnly);
 
             final CompositeAdapter<P, ?> ca = getCompositeAdapter();
             final List<Comparable<?>> idList = new ArrayList<>();
@@ -385,29 +385,36 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
                 if( leafOnly && !item.isLeaf() )
                     return true;
 
-                IMarkable markable = (IMarkable) item.getValue();
+                final IMarkable markable = (IMarkable) item.getValue();
 
                 if( !markable.isMark() )
-                    idList.add( ca.getId(item.getValue()) );
+                    idList.add(ca.getId(item.getValue()));
 
                 return true;
             });
 
-            if( !idList.isEmpty() )
-                XXIDsMarkerDao.markAll( getTaskContextForUse(), getOrCreateMarkerId(), markDescriptor, idList );
+            if (idList.isEmpty()) {
+                return;
+            }
 
-            /*
-             * markedCount будет установлен через:
-             *   super.executeQuery()
-             *     -> EXECUTE after
-             *     -> recalcMarkedCount()
-             */
+            fireMarkDataSetEvent(MARK_ALL, true, leafOnly);
+
+            XXIDsMarkerDao.markAll(
+                    getTaskContextForUse(),
+                    getOrCreateMarkerId(),
+                    markDescriptor,
+                    idList
+            );
+
             super.executeQuery();
 
             fireMarkDataSetEvent(MARK_ALL, false, leafOnly);
         }
         catch (Throwable th) {
-            throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Error on markAll", th );
+            throw new TreeDataSetException(
+                    Tags.PRODUCT_LABEL + "Error on markAll",
+                    th
+            );
         }
     }
 
@@ -415,6 +422,7 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
     {
         markAll(false);
     }
+
 
     /** {@inheritDoc } */
     public void unMarkAll() {
@@ -465,6 +473,7 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
         return false;
     }
 
+
     /** */
     public Iterator<P> getMarkedRowIterator() {
 
@@ -499,8 +508,10 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
         return isSupportMark() && getMarkerId() != null;
     }
 
+
     /** */
     private String sql4MarkColumn;
+
 
     /** {@inheritDoc } */
     @Override
