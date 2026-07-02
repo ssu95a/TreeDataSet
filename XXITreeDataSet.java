@@ -391,26 +391,28 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
                 if( leafOnly && !item.isLeaf() )
                     return true;
 
-                final IMarkable markable = (IMarkable) item.getValue();
+                final P value = item.getValue();
+                final IMarkable markable = (IMarkable) value;
 
                 if( !markable.isMark() )
-                    idList.add(ca.getId(item.getValue()));
+                {
+                    final Comparable<?> id = ca.getId(value);
+
+                    if( id == null )
+                        throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Cannot mark row with null ID. Class: " + value.getClass().getName() );
+
+                    idList.add(id);
+                }
 
                 return true;
             });
 
-            if (idList.isEmpty()) {
+            if( idList.isEmpty() )
                 return;
-            }
 
-            fireMarkDataSetEvent(MARK_ALL, true, leafOnly);
+            fireMarkDataSetEvent( MARK_ALL, true, leafOnly );
 
-            XXIDsMarkerDao.markAll(
-                    getTaskContextForUse(),
-                    getOrCreateMarkerId(),
-                    markDescriptor,
-                    idList
-            );
+            XXIDsMarkerDao.markAll( getTaskContextForUse(), getOrCreateMarkerId(), markDescriptor, idList );
 
             super.executeQuery();
 
