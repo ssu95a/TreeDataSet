@@ -140,6 +140,22 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
     @Override
     public void setRowClass( Class<? extends P>  rowClass) {
 
+        Class<P> currentRowClass = getRowClass();
+
+        if (currentRowClass != null) {
+            if (currentRowClass == rowClass) {
+                return;
+            }
+
+            throw new IllegalStateException(
+                    Tags.PRODUCT_LABEL
+                            + "XXITreeDataSet rowClass cannot be changed. Current: "
+                            + currentRowClass.getName()
+                            + ", new: "
+                            + (rowClass == null ? "null" : rowClass.getName())
+            );
+        }
+
         super.setRowClass(rowClass);
 
         MarkDescriptor md = ( rowClass == null ? MarkDescriptor.g_emptyInstance : new MarkDescriptor( rowClass ) );
@@ -227,13 +243,28 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
     }
 
     /** {@inheritDoc } */
-    public void setMarkerID( Long markerId ) {
+    public void setMarkerID(Long markerId) {
+
+        if( U.equals(this.markerId, markerId) )
+            return;
+
+        if( !isEmpty() )
+            throw new IllegalStateException(
+                Tags.PRODUCT_LABEL + "Marker ID cannot be changed while XXITreeDataSet contains loaded rows"
+            );
+
         this.markerId = markerId;
+        markedCount = 0;
     }
 
+    /** {@inheritDoc } */
+    @Override
+    public void clear() {
+        super.clear();
+        markedCount = 0;
+    }
 
     /** Реализация установки или снятия пометки на одну запись. */
-    /** */
     protected void doMark(
             ITreeDataSetItem<P> item,
             boolean mark
@@ -378,14 +409,11 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
     /** {@inheritDoc } */
     public void unMarkAll() {
 
-        if (!isSupportMark()) {
+        if( !isSupportMark() )
             return;
-        }
 
-        if (getMarkerId() == null) {
-            markedCount = 0;
+        if( getMarkerId() == null )
             return;
-        }
 
         try {
 
