@@ -605,26 +605,21 @@ public class SQLTreeDataSet<P> extends AbstractTreeDataSet<P> {
                 }
             };
 
+            final JDBCDataReader<P> recordReader;
+
+            try {
+                recordReader = new JDBCDataReader<>( getTaskContextForUse().getConnection(), refreshSql, getRowMapper(), getRowClass(), isEnableMark() );
+            }
+            catch( Throwable th ) {
+                throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Error while preparing SQL statement to read record", th );
+            }
+
             final List<P> items;
 
-            try (
-                    final JDBCDataReader<P> recordReader =
-                            new JDBCDataReader<>(
-                                    getTaskContextForUse().getConnection(),
-                                    refreshSql,
-                                    getRowMapper(),
-                                    getRowClass(),
-                                    isSupportMark()
-                            )
-            )
+            try( final JDBCDataReader<P> reader = recordReader )
             {
-                recordReader.executeQuery(prm);
-
-                /*
-                 * Читаем максимум две записи, чтобы обнаружить
-                 * нарушение уникальности запроса по ID.
-                 */
-                items = recordReader.getNextPage(2);
+                reader.executeQuery(prm);
+                items = reader.getNextPage(2);
             }
 
             if( items.size() > 1 )
