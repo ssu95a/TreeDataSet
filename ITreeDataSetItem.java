@@ -148,6 +148,7 @@ public interface ITreeDataSetItem<P> {
         return child != null && child.setItemCurrent();
     }
 
+
     /** */
     default boolean setCurrentChild(ITreeDataSetItem<P> child) throws TreeDataSetException {
 
@@ -158,15 +159,21 @@ public interface ITreeDataSetItem<P> {
         return child.setItemCurrent();
     }
 
+
     /** */
-    default boolean setItemCurrent() throws TreeDataSetException {
-        return getDataSet().setCurrentItem(this);
+    default boolean setItemCurrent( )
+    {
+       final ITreeDataSet<P> dataSet = getDataSet();
+       return dataSet != null && dataSet.setCurrentItem(this);
     }
+
 
     /** */
     default boolean isCurrentItem() throws TreeDataSetException {
-        return getDataSet().getCurrentItem() == this;
+       final ITreeDataSet<P> dataSet = getDataSet();
+       return dataSet != null && dataSet.getCurrentItem() == this;
     }
+
 
     /** */
     default void insert(P value) throws TreeDataSetException {
@@ -284,25 +291,31 @@ public interface ITreeDataSetItem<P> {
         return removeItems(item -> item == child) > 0;
     }
 
+
     /** */
-    default boolean remove(int itemNum) throws TreeDataSetException {
-
+    default boolean remove(int itemNum)
+    {
         ITreeDataSetItem<P> child = getChildAt(itemNum);
-
         return child != null && remove(child);
     }
 
+
     /** */
-    default boolean remove() throws TreeDataSetException {
+    default boolean remove() throws TreeDataSetException
+    {
+       final ITreeDataSet<P> dataSet = getDataSet();
 
-        if (isRoot()) {
-            return getDataSet().removeRootItem(this);
-        }
+       if( dataSet == null )
+          return false;
 
-        ITreeDataSetItem<P> parent = getParentItem();
+       if( isRoot() )
+          return dataSet.removeRootItem(this);
 
-        return parent != null && parent.remove(this);
+       final ITreeDataSetItem<P> parent = getParentItem();
+
+       return parent != null && parent.remove(this);
     }
+
 
     /**
      * Removes children matching item-level predicate.
