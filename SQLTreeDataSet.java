@@ -562,8 +562,8 @@ public class SQLTreeDataSet<P> extends AbstractTreeDataSet<P> {
     /** Обновить текущую запись из БД */
     public void refreshCurrentItemFromDB( boolean refreshDependentData, Consumer<SQLTreeDataSet<P>> onNoDataFound )
     {
-        try {
-
+        try
+        {
             final ITreeDataSetItem<P> currentItem = getCurrentItem();
 
             if( currentItem == null || currentItem.getValue() == null )
@@ -575,6 +575,7 @@ public class SQLTreeDataSet<P> extends AbstractTreeDataSet<P> {
             final P oldValue = currentItem.getValue();
 
             final Comparable<?> currentId = adapter.getId(oldValue);
+
             final Comparable<?> currentParentId = adapter.getParentId(oldValue);
 
             if( currentId == null )
@@ -589,19 +590,22 @@ public class SQLTreeDataSet<P> extends AbstractTreeDataSet<P> {
                 final IParameters parameters = getParameters();
 
                 @Override
-                public Object getParameter(String parameterName) {
-
-                    if (idColumn.equalsIgnoreCase(parameterName))
+                public Object getParameter(String parameterName)
+                {
+                    if( idColumn.equalsIgnoreCase(parameterName) )
                         return currentId;
 
                     return parameters.getParameter(parameterName);
                 }
 
                 @Override
-                public Object getParameter(int index) {
+                public Object getParameter(int index)
+                {
                     return parameters.getParameter(index);
                 }
             };
+
+            final List<P> items;
 
             try (
                     final JDBCDataReader<P> recordReader =
@@ -616,48 +620,58 @@ public class SQLTreeDataSet<P> extends AbstractTreeDataSet<P> {
             {
                 recordReader.executeQuery(prm);
 
-                final List<P> items = recordReader.getNextPage(2);
-
-                if( items.size() > 1 )
-                    throw new TreeDataSetException( Tags.PRODUCT_LABEL + "More than one row found while refreshing tree item. ID: " + currentId + ", RowClass: " + getRowClass().getName() );
-
-                if( !items.isEmpty() )
-                {
-                    final P newValue = items.get(0);
-
-                    final Comparable<?> refreshedId = adapter.getId(newValue);
-
-                    final Comparable<?> refreshedParentId = adapter.getParentId(newValue);
-
-                    if( !U.equals(currentId, refreshedId) )
-                        throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Refreshed row ID differs from current tree item ID. " + "Current: " + currentId + ", refreshed: " + refreshedId );
-
-                    if (!U.equals(currentParentId, refreshedParentId))
-                        throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Tree item parent ID changed during refresh. " + "Current: " + currentParentId + ", refreshed: " + refreshedParentId + ". Use executeQuery() to rebuild tree structure" );
-
-                    final List<ITreeDataSetItem<P>> eventItems = Collections.singletonList(currentItem);
-
-                    if( refreshDependentData )
-                        fireRowsEvent( new TreeDataSetRowsEvent<>( this, true, REFRESH, eventItems, -1 ) );
-
-                    currentItem.setValue(newValue);
-
-                    if( refreshDependentData )
-                        fireRowsEvent( new TreeDataSetRowsEvent<>( this, false, REFRESH, eventItems, -1 ) );
-                }
-                else
-                {
-                    if (onNoDataFound != null)
-                        onNoDataFound.accept(this);
-                    else
-                        JInvDbException.throwNoDataFound( refreshSql, Collections.emptyList() );
-                }
+                /*
+                 * Читаем максимум две записи, чтобы обнаружить
+                 * нарушение уникальности запроса по ID.
+                 */
+                items = recordReader.getNextPage(2);
             }
+
+            if( items.size() > 1 )
+                throw new TreeDataSetException( Tags.PRODUCT_LABEL + "More than one row found while refreshing tree item. ID: " + currentId + ", RowClass: " + getRowClass().getName() );
+
+            if( items.isEmpty() )
+            {
+                if( onNoDataFound != null )
+                    onNoDataFound.accept(this);
+                else
+                    JInvDbException.throwNoDataFound( refreshSql, Collections.emptyList() );
+
+                return;
+            }
+
+            final P newValue = items.get(0);
+
+            final Comparable<?> refreshedId = adapter.getId(newValue);
+            final Comparable<?> refreshedParentId = adapter.getParentId(newValue);
+
+            if( !U.equals(currentId, refreshedId) )
+                throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Refreshed row ID differs from current tree item ID. Current: " + currentId + ", refreshed: " + refreshedId );
+
+            if( !U.equals(currentParentId, refreshedParentId) )
+                throw new TreeDataSetException(
+                        Tags.PRODUCT_LABEL
+                                + "Tree item parent ID changed during refresh. "
+                                + "Current: " + currentParentId
+                                + ", refreshed: " + refreshedParentId
+                                + ". Use executeQuery() to rebuild tree structure"
+                );
+
+            final List<ITreeDataSetItem<P>> eventItems = Collections.singletonList(currentItem);
+
+            if( refreshDependentData )
+                fireRowsEvent( new TreeDataSetRowsEvent<>( this, true, REFRESH, eventItems, -1 ) );
+
+            currentItem.setValue(newValue);
+
+            if( refreshDependentData )
+                fireRowsEvent( new TreeDataSetRowsEvent<>( this, false, REFRESH, eventItems, -1 ) );
         }
-        catch (Throwable th) {
+        catch( Throwable th ) {
             throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Error on refresh current treeItem data from DB. RowClass = " + getRowClass(), th );
         }
     }
+
 
     /** Перед первым выполнением запроса DataSet */
     protected void onBeforeFirstExecute( ) {
