@@ -374,6 +374,7 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
         dataSetRowsListeners.fire( new TreeDataSetRowsEvent<>( this, false, INSERT, rootList, 0 ) );
     }
 
+
    /** */
    public ITreeDataSetItem<P> insertRoots( Collection<P> values, IDataSet.InsertRowModeEnum insertMode, boolean doSetToCurrent )
    {
@@ -394,7 +395,10 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
       }
       else
       {
-         switch (insertMode) {
+         final IDataSet.InsertRowModeEnum effectiveInsertMode = insertMode == null ? IDataSet.InsertRowModeEnum.LAST : insertMode;
+
+         switch( effectiveInsertMode )
+         {
             case FIRST:
                position = 0;
                break;
@@ -410,6 +414,7 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
 
                if( position == -1 )
                    addToEnd = true;
+
                break;
             }
 
@@ -434,7 +439,7 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
       if( addToEnd )
           position = rootList().size();
 
-      fireBeforeRowsEvent(INSERT, newItems, position);
+      fireBeforeRowsEvent( INSERT, newItems, position );
 
       if( addToEnd )
           rootList().addAll( newItems );
