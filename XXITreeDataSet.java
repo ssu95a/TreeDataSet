@@ -181,6 +181,27 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
                         recalcMarkedCount();
                 }
             });
+
+            addItemListener(event -> {
+
+                if (event.getEventType() != TreeDataSetItemEvent.ItemEventType.CHANGE_VALUE)
+                    return;
+
+                final Object oldValue = event.getOldValue();
+                final Object newValue = event.getNewValue();
+
+                final boolean oldMarked = oldValue instanceof IMarkable && ((IMarkable) oldValue).isMark();
+
+                final boolean newMarked = newValue instanceof IMarkable && ((IMarkable) newValue).isMark();
+
+                if( oldMarked == newMarked )
+                    return;
+                if (newMarked)
+                    markedCount++;
+                else
+                    if( markedCount > 0 )
+                        markedCount--;
+            });
         }
         else
             markedCount = 0;
