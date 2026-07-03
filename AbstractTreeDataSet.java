@@ -337,7 +337,7 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
     /** */
     @Override
     public List<ITreeDataSetItem<P>> getRootList() {
-        return rootList;
+       return Collections.unmodifiableList(rootList);
     }
 
     /** */
@@ -478,15 +478,15 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
     }
 
    /** */
-   private boolean containsItem(ITreeDataSetItem<P> item)
+   protected boolean containsItem(ITreeDataSetItem<P> item)
    {
       if( item == null )
-         return false;
+          return false;
 
       for( ITreeDataSetItem<P> root : rootList() )
       {
-         if( containsItem(root, item) )
-            return true;
+         if( containsItem( root, item ) )
+             return true;
       }
 
       return false;
@@ -516,7 +516,6 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
       return false;
    }
 
-   /** */
    /** */
    public boolean removeRootItem(ITreeDataSetItem<P> item)
    {

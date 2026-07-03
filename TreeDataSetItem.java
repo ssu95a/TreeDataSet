@@ -4,6 +4,7 @@ import ru.inversion.dataset.AbstractDataSetBase;
 import ru.inversion.utils.U;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -141,9 +142,11 @@ public class TreeDataSetItem<P> implements ITreeDataSetItem<P> {
 
    /** */
    @Override
-   public List<ITreeDataSetItem<P>> getChildrenList() {
-      return children;
+   public List<ITreeDataSetItem<P>> getChildrenList()
+   {
+      return children == null ? null : Collections.unmodifiableList(children);
    }
+
 
    /** */
    @Override

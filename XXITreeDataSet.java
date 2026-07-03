@@ -292,14 +292,12 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
     }
 
     /** Реализация установки или снятия пометки на одну запись. */
-    protected void doMark(
-            ITreeDataSetItem<P> item,
-            boolean mark
-    ) {
+    protected void doMark( ITreeDataSetItem<P> item, boolean mark )
+    {
         if( !isSupportMark() )
             return;
 
-        if( item == null || item.getDataSet() != this || item.getValue() == null )
+        if( item == null || item.getDataSet() != this || item.getValue() == null || !containsItem(item) )
             return;
 
         if (!(item.getValue() instanceof IMarkable))
@@ -318,10 +316,7 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
             return;
         }
 
-        final DataSetMarkEvent.MarkActionEnum action
-                = mark
-                        ? DataSetMarkEvent.MarkActionEnum.MARK_ROW
-                        : DataSetMarkEvent.MarkActionEnum.UNMARK_ROW;
+        final DataSetMarkEvent.MarkActionEnum action = mark ? MARK_ROW : UNMARK_ROW;
 
         try {
 

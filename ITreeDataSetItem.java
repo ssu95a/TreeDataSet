@@ -20,24 +20,36 @@ public interface ITreeDataSetItem<P> {
     /** */
     ITreeDataSet<P> getDataSet();
 
+
     /** */
     ITreeDataSetItem<P> getParentItem();
 
-    /** */
+
+   /**
+    * Возвращает неизменяемое представление списка дочерних элементов.
+    * <p>
+    * Может возвращать {@code null}, если дочерние элементы отсутствуют.
+    * Изменение структуры выполняется через методы {@link #addChild},
+    * {@link #addChildrenAt} и {@link #removeChildren}.
+    */
     List<ITreeDataSetItem<P>> getChildrenList();
+
 
     /** */
     P getValue();
 
+
     /** */
     void setValue(P value);
+
 
     /** */
     void executeQuery();
 
+
     /**
      * Creates new child item for this parent.
-     *
+     * <p>
      * Must create item compatible with current implementation:
      * TreeDataSetItem creates TreeDataSetItem,
      * TreeViewItemAdapter creates TreeViewItemAdapter.
@@ -46,6 +58,7 @@ public interface ITreeDataSetItem<P> {
      * Prefer not to attach item here; attach happens in addChildrenAt/addChild.
      */
     ITreeDataSetItem<P> newChildItem(P value);
+
 
     /**
      * Physically adds one child.
