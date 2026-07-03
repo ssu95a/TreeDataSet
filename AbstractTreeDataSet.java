@@ -911,14 +911,19 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
     protected void doClose()
     { }
 
+
     /** */
     @Override
-    public void close()  {
-        fireDataSetEvent( CLOSE, true  );
-        doClose();
-        rootList.clear();
-        fireDataSetEvent( CLOSE, false );
+    public void close() {
+
+       fireDataSetEvent(CLOSE, true);
+
+       doClose();
+       clear();
+
+       fireDataSetEvent(CLOSE, false);
     }
+
 
     /** */
     @Override
