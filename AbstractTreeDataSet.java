@@ -517,6 +517,7 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
    }
 
    /** */
+   /** */
    public boolean removeRootItem(ITreeDataSetItem<P> item)
    {
       if( item == null || item.getDataSet() != this || !item.isRoot() )
@@ -528,9 +529,20 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
           return false;
 
       final ITreeDataSetItem<P> oldCurrent = getCurrentItem();
-      final boolean currentRemoved = containsItem(item, oldCurrent);
+
+      final boolean currentRemoved = containsItem( item, oldCurrent);
 
       dataSetRowsListeners.fire( new TreeDataSetRowsEvent<>( this, true, DELETE, Collections.singletonList(item), removedIndex ) );
+
+      /*
+       * DELETE-before listener must not structurally move or remove
+       * the root currently being deleted.
+       *
+       * Without this check remove(removedIndex) could delete
+       * a completely different root.
+       */
+      if( removedIndex >= rootList().size() || rootList().get(removedIndex) != item )
+          throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Root list was modified during DELETE before event" );
 
       rootList().remove(removedIndex);
 
@@ -568,33 +580,30 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
    /**
     * Удаление текущей записи из TreeDataSet.
     * <p>
-    * При успешном удалении генерит событие {@code TreeDataSetItemEvent.DELETE}
-    * Если была удалена последняя запись то генерится событие {@code DataSetEvent.CLEAR} см. {@link #clear() }
-    * Метод перемещает позицию с удаляемой записи внутри TreeDataSet на следующую.
+    * Метод перемещает позицию с удаляемой записи
+    * на следующий доступный элемент.
     *
-    * @return удаленную запись, если удаление не произошло то {@code null}
+    * @return удалённый элемент или {@code null},
+    *         если текущего элемента нет либо удаление не выполнено
     */
-    @Override
-    public ITreeDataSetItem<P> removeCurrentItem( ) {
+   @Override
+   public ITreeDataSetItem<P> removeCurrentItem()
+   {
+      final ITreeDataSetItem<P> item = getCurrentItem();
 
-        final ITreeDataSetItem<P> currentItem = getCurrentItem();
+      if( item == null )
+          return null;
 
-        if( currentItem != null )
-        {
-            if( currentItem.isRoot() )
-                removeRootItem( currentItem );
-            else
-                currentItem.remove();
-        }
+      final boolean removed;
 
-        // TODO:
-        // Установить новый текущий элемент
-        //
+      if( item.isRoot() )
+          removed = removeRootItem(item);
+      else
+          removed = item.remove();
 
+      return removed ? item : null;
+   }
 
-
-        return currentItem;
-    }
 
     /** */
     @Override
