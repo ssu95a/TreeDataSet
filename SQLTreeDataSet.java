@@ -612,14 +612,17 @@ public class SQLTreeDataSet<P> extends AbstractTreeDataSet<P> {
                                     getRowClass(),
                                     isSupportMark()
                             )
-            ) {
+            )
+            {
                 recordReader.executeQuery(prm);
 
-                final List<P> items =
-                        recordReader.getNextPage(1);
+                final List<P> items = recordReader.getNextPage(2);
 
-                if (!items.isEmpty()) {
+                if( items.size() > 1 )
+                    throw new TreeDataSetException( Tags.PRODUCT_LABEL + "More than one row found while refreshing tree item. ID: " + currentId + ", RowClass: " + getRowClass().getName() );
 
+                if( !items.isEmpty() )
+                {
                     final P newValue = items.get(0);
 
                     final Comparable<?> refreshedId = adapter.getId(newValue);
