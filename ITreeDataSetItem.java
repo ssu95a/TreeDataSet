@@ -317,76 +317,99 @@ public interface ITreeDataSetItem<P> {
     }
 
 
-    /**
-     * Removes children matching item-level predicate.
-     */
-    default int removeItems(Predicate<ITreeDataSetItem<P>> predicate) throws TreeDataSetException {
+   /**
+    * Removes children matching item-level predicate.
+    */
+   default int removeItems( Predicate<ITreeDataSetItem<P>> predicate )
+   {
+      if( predicate == null || isLeaf() )
+          return 0;
 
-        if( predicate == null || isLeaf() )
-            return 0;
+      final ITreeDataSet<P> dataSet = getDataSet();
 
-        List<ITreeDataSetItem<P>> children = getChildrenList();
+      if( dataSet == null )
+          return 0;
 
-        if( children == null || children.isEmpty() )
-            return 0;
+      final List<ITreeDataSetItem<P>> children = getChildrenList();
 
-        final int totalCount = children.size();
+      if( children == null || children.isEmpty() )
+          return 0;
 
-        int firstDeletedIndex = -1;
-        int index = 0;
+      /*
+       * Фиксируем состав и порядок детей до вызова predicate
+       * и пользовательских listeners.
+       */
+      final List<ITreeDataSetItem<P>> childrenSnapshot = new ArrayList<>(children);
 
-        List<ITreeDataSetItem<P>> removed = new LinkedList<>();
+      final int totalCount = childrenSnapshot.size();
 
-        ITreeDataSetItem<P> current = getDataSet().getCurrentItem();
-        boolean currentRemoved = false;
+      int firstDeletedIndex = -1;
+      int index = 0;
 
-        /*
-         * Copy is important:
-         * predicate/listeners must not break iteration over physical children list.
-         */
-        for( ITreeDataSetItem<P> child : new ArrayList<>(children) )
-        {
-            if( predicate.test(child) )
-            {
-                if( firstDeletedIndex == -1 )
-                    firstDeletedIndex = index;
+      final List<ITreeDataSetItem<P>> removed = new LinkedList<>();
 
-                removed.add(child);
+      final ITreeDataSetItem<P> current = dataSet.getCurrentItem();
 
-                if( !currentRemoved && child.containsItem(current) )
-                    currentRemoved = true;
-            }
+      boolean currentRemoved = false;
 
-            index++;
-        }
+      for( ITreeDataSetItem<P> child : childrenSnapshot )
+      {
+         if( predicate.test(child) )
+         {
+            if( firstDeletedIndex == -1 )
+                firstDeletedIndex = index;
 
-        if( removed.isEmpty() )
-            return 0;
+            removed.add(child);
 
-        final boolean willBecomeLeaf = removed.size() == totalCount;
+            if( !currentRemoved && child.containsItem(current) )
+                 currentRemoved = true;
+         }
 
-        if( willBecomeLeaf )
-            fireLeafEvent( true, true );
+         index++;
+      }
 
-        fireBeforeRowsEvent( DELETE, removed, firstDeletedIndex );
+      if( removed.isEmpty() )
+          return 0;
 
-        removeChildren(removed);
+      final boolean willBecomeLeaf =removed.size() == totalCount;
 
-        final int removeCount = totalCount - getChildCount();
+      if( willBecomeLeaf )
+          fireLeafEvent(true, true);
 
-        if( currentRemoved )
-        {
-            final ITreeDataSetItem<P> newCurrent = selectCurrentAfterChildrenDelete(firstDeletedIndex);
-            getDataSet().setCurrentItem(newCurrent);
-        }
+      fireBeforeRowsEvent( DELETE, removed, firstDeletedIndex );
 
-        fireAfterRowsEvent(DELETE, removed, firstDeletedIndex );
+      /*
+       * DELETE-before listener не должен менять состав
+       * или порядок дочерних элементов.
+       */
+      final List<ITreeDataSetItem<P>> actualChildren = getChildrenList();
 
-        if( willBecomeLeaf )
-            fireLeafEvent(false, true);
+      if( actualChildren == null || actualChildren.size() != childrenSnapshot.size() )
+         throw new TreeDataSetException( "Children list was modified during DELETE before event" );
 
-        return removeCount;
-    }
+      for( int i = 0; i < childrenSnapshot.size(); i++ )
+      {
+         if( actualChildren.get(i) != childrenSnapshot.get(i) )
+            throw new TreeDataSetException( "Children list was modified during DELETE before event" );
+      }
+
+      removeChildren(removed);
+
+      final int removeCount = totalCount - getChildCount();
+
+      if( currentRemoved )
+      {
+         final ITreeDataSetItem<P> newCurrent = selectCurrentAfterChildrenDelete( firstDeletedIndex );
+         dataSet.setCurrentItem(newCurrent);
+      }
+
+      fireAfterRowsEvent( DELETE, removed, firstDeletedIndex );
+
+      if( willBecomeLeaf )
+          fireLeafEvent(false, true);
+
+      return removeCount;
+   }
 
     /** */
     default ITreeDataSetItem<P> selectCurrentAfterChildrenDelete(int firstDeletedIndex) {

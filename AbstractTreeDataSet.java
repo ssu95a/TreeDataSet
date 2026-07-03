@@ -517,8 +517,7 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
    }
 
    /** */
-   /** */
-   public boolean removeRootItem(ITreeDataSetItem<P> item)
+   public boolean removeRootItem( ITreeDataSetItem<P> item )
    {
       if( item == null || item.getDataSet() != this || !item.isRoot() )
           return false;
@@ -544,7 +543,7 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
       if( removedIndex >= rootList().size() || rootList().get(removedIndex) != item )
           throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Root list was modified during DELETE before event" );
 
-      rootList().remove(removedIndex);
+      rootList( ).remove( removedIndex );
 
       if( currentRemoved )
       {
