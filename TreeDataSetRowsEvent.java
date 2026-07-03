@@ -2,6 +2,8 @@ package ru.inversion.tds;
 
 import ru.inversion.dataset.DataSetRowEvent;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /** */
@@ -10,7 +12,7 @@ public class TreeDataSetRowsEvent<P> extends TreeDataSetEventBase<P> {
     final DataSetRowEvent.RowOperationEnum itemOperation;
 
     /**
-     * Запись до действия.
+     * <h6>Запись до действия.</h6>
      * <p>
      * Используется при действиях: UPDATE, REFRESH, DELETE
      */
@@ -26,7 +28,7 @@ public class TreeDataSetRowsEvent<P> extends TreeDataSetEventBase<P> {
     {
         super(source, before);
         this.itemOperation = itemOperation;
-        this.items         = items;
+        this.items = items == null ? null : Collections.unmodifiableList( new ArrayList<>(items) );
         this.itemIndex     = itemIndex;
     }
 

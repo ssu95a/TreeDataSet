@@ -77,7 +77,6 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
 
     /**
      * Коллекция слушателей событий связанных с элементами ITreeDataSetItem
-     * <p>
      * @see ITreeDataSetRowsListener
      * @see TreeDataSetRowsEvent
      */
@@ -86,7 +85,6 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
 
     /**
      * Коллекция слушателей событий связанных с событиями навигации TreeDataSet
-     * <p>
      * @see ITreeDataSetNavigationListener
      * @see TreeDataSetNavigationEvent
      */
@@ -102,8 +100,7 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
             ListenerManFactory.createListenerManEvent( ITreeDataSetListener::dataSetChanged );
 
     /**
-     * Коллекция слушателей событий связанных с элементами ITreeDataSetItem
-     * <p>
+     * <h6>Коллекция слушателей событий связанных с элементами ITreeDataSetItem</h6>
      * @see ITreeDataSetItemListener
      * @see TreeDataSetItemEvent
      */
@@ -836,41 +833,44 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
         itemListeners.fire(event);
     }
 
-    /**
-     * Очищает все элементы внутри TreeDataSet.
-     * <p>
-     * Удаляются все записи из TreeDataSet.
-     * Номер текущей записи становится -1
-     * При запросе текущей записи возвращается {@code null}
-     *
-     * В процессе очищения записей формируется событие {@code DataSetRowEvent} с eventType - DELETE.
-     *
-     * @see TreeDataSetRowsEvent
-     */
+
+   /**
+    * <h6>Очищает все элементы внутри TreeDataSet.</h6>
+    * <p>
+    * Удаляются все записи из TreeDataSet.
+    * Текущий элемент сбрасывается в {@code null}.
+    *
+    * В процессе очистки формируется событие
+    * {@link TreeDataSetRowsEvent} с операцией {@code DELETE}.
+    *
+    * @see TreeDataSetRowsEvent
+    */
    @Override
    public void clear()
    {
-      int rowCount = this.rootList( ).size( );
+      final boolean hadRows = !rootList().isEmpty();
+      final ITreeDataSetItem<P> oldCurrent = getCurrentItem();
 
-      if( rowCount > 0 )
+      if( hadRows )
       {
-         final ITreeDataSetItem<P> curItem = getCurrentItem();
-
-         fireRowsEvent( new TreeDataSetRowsEvent<P>(this, true, DELETE, rootList(), 0 ) );
-
+         fireRowsEvent( new TreeDataSetRowsEvent<>( this, true, DELETE, rootList(), 0 ) );
          rootList().clear();
-
-         this.currentItem = null;
-
-         if( curItem != null )
-             fireNavigationEvent( curItem, null );
-
-         fireRowsEvent( new TreeDataSetRowsEvent<>( this, false, DELETE, null, 0 ) );
       }
+
+      totalItemCount = 0;
+      leafItemCount  = 0;
+      currentItem    = null;
+
+      if( oldCurrent != null )
+          fireNavigationEvent( oldCurrent, null );
+
+      if( hadRows )
+          fireRowsEvent( new TreeDataSetRowsEvent<>( this, false, DELETE, null, 0 ) );
    }
 
-    /** */
-    public boolean isEmpty()
+
+   /** */
+   public boolean isEmpty()
     {
         return rootList.isEmpty();
     }
