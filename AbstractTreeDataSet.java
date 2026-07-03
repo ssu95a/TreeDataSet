@@ -502,28 +502,23 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
    }
 
    /** */
-   public boolean removeRootItem( ITreeDataSetItem<P> item )
+   /** */
+   public boolean removeRootItem(ITreeDataSetItem<P> item)
    {
       if( item == null || item.getDataSet() != this || !item.isRoot() )
           return false;
 
-      int index = rootList().indexOf(item);
+      final int removedIndex = rootList().indexOf(item);
 
-      if( index == -1 )
+      if( removedIndex == -1 )
           return false;
 
       final ITreeDataSetItem<P> oldCurrent = getCurrentItem();
-      final boolean currentRemoved = containsItem( item, oldCurrent );
+      final boolean currentRemoved = containsItem(item, oldCurrent);
 
-      dataSetRowsListeners.fire (
-         new TreeDataSetRowsEvent<>( this, true, DELETE, Collections.singletonList(item), index )
-      );
+      dataSetRowsListeners.fire( new TreeDataSetRowsEvent<>( this, true, DELETE, Collections.singletonList(item), removedIndex ) );
 
-      rootList().remove(index);
-
-      dataSetRowsListeners.fire(
-         new TreeDataSetRowsEvent<>(this, false, DELETE, Collections.singletonList(item), index)
-      );
+      rootList().remove(removedIndex);
 
       if( currentRemoved )
       {
@@ -531,21 +526,21 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
 
          if( !rootList().isEmpty() )
          {
-            if( index >= rootList().size() )
-                index =  rootList().size() - 1;
+            int newCurrentIndex = removedIndex;
 
-            newCurrent = rootList().get(index);
+            if( newCurrentIndex >= rootList().size() )
+                newCurrentIndex = rootList().size() - 1;
+
+            newCurrent = rootList().get(newCurrentIndex);
          }
 
          if( newCurrent != null )
             setCurrentItem(newCurrent);
          else
-         {
-            currentItem = null;
-
-            fireNavigationEvent( oldCurrent, null );
-         }
+            clearCurrentItem();
       }
+
+      dataSetRowsListeners.fire( new TreeDataSetRowsEvent<>( this, false, DELETE, Collections.singletonList(item), removedIndex ) );
 
       return true;
    }

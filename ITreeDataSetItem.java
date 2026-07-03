@@ -296,15 +296,13 @@ public interface ITreeDataSetItem<P> {
      */
     default int removeItems(Predicate<ITreeDataSetItem<P>> predicate) throws TreeDataSetException {
 
-        if (predicate == null || isLeaf()) {
+        if( predicate == null || isLeaf() )
             return 0;
-        }
 
         List<ITreeDataSetItem<P>> children = getChildrenList();
 
-        if (children == null || children.isEmpty()) {
+        if( children == null || children.isEmpty() )
             return 0;
-        }
 
         final int totalCount = children.size();
 
@@ -320,50 +318,46 @@ public interface ITreeDataSetItem<P> {
          * Copy is important:
          * predicate/listeners must not break iteration over physical children list.
          */
-        for (ITreeDataSetItem<P> child : new ArrayList<>(children)) {
-            if (predicate.test(child)) {
-                if (firstDeletedIndex == -1) {
+        for( ITreeDataSetItem<P> child : new ArrayList<>(children) )
+        {
+            if( predicate.test(child) )
+            {
+                if( firstDeletedIndex == -1 )
                     firstDeletedIndex = index;
-                }
 
                 removed.add(child);
 
-                if (!currentRemoved && child.containsItem(current)) {
+                if( !currentRemoved && child.containsItem(current) )
                     currentRemoved = true;
-                }
             }
 
             index++;
         }
 
-        if (removed.isEmpty()) {
+        if( removed.isEmpty() )
             return 0;
-        }
 
         final boolean willBecomeLeaf = removed.size() == totalCount;
 
-        if (willBecomeLeaf) {
-            fireLeafEvent(true, true);
-        }
+        if( willBecomeLeaf )
+            fireLeafEvent( true, true );
 
-        fireBeforeRowsEvent(DELETE, removed, firstDeletedIndex);
+        fireBeforeRowsEvent( DELETE, removed, firstDeletedIndex );
 
         removeChildren(removed);
 
-        int removeCount = totalCount - getChildCount();
+        final int removeCount = totalCount - getChildCount();
 
-        fireAfterRowsEvent(DELETE, removed, firstDeletedIndex);
-
-        if (willBecomeLeaf) {
-            fireLeafEvent(false, true);
-        }
-
-        if (currentRemoved) {
-            ITreeDataSetItem<P> newCurrent =
-                    selectCurrentAfterChildrenDelete(firstDeletedIndex);
-
+        if( currentRemoved )
+        {
+            final ITreeDataSetItem<P> newCurrent = selectCurrentAfterChildrenDelete(firstDeletedIndex);
             getDataSet().setCurrentItem(newCurrent);
         }
+
+        fireAfterRowsEvent(DELETE, removed, firstDeletedIndex );
+
+        if( willBecomeLeaf )
+            fireLeafEvent(false, true);
 
         return removeCount;
     }
