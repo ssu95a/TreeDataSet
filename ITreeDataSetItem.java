@@ -381,21 +381,18 @@ public interface ITreeDataSetItem<P> {
     }
 
     /** */
-    default boolean containsItem(ITreeDataSetItem<P> item) {
-
-        if (item == null) {
+    default boolean containsItem(ITreeDataSetItem<P> item)
+    {
+        if( item == null )
             return false;
-        }
 
-        if (this == item) {
+        if( this == item )
             return true;
-        }
 
-        if (isLeaf()) {
+        if( isLeaf() )
             return false;
-        }
 
-        for (ITreeDataSetItem<P> child : getChildrenList()) {
+        for( ITreeDataSetItem<P> child : getChildrenList() ) {
             if (child.containsItem(item)) {
                 return true;
             }

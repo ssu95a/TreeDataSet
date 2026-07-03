@@ -478,6 +478,21 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
     }
 
    /** */
+   private boolean containsItem(ITreeDataSetItem<P> item)
+   {
+      if( item == null )
+         return false;
+
+      for( ITreeDataSetItem<P> root : rootList() )
+      {
+         if( containsItem(root, item) )
+            return true;
+      }
+
+      return false;
+   }
+
+   /** */
    private boolean containsItem (
         ITreeDataSetItem<P> root,
         ITreeDataSetItem<P> item
@@ -589,24 +604,29 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
     }
 
 
-   /** helper для событий смены  текущего элемента */
-   private boolean changeCurrentItem( ITreeDataSetItem<P> item )
+   /** helper для событий смены текущего элемента */
+   private boolean changeCurrentItem(ITreeDataSetItem<P> item)
    {
-      if( item != null && item.getDataSet() != this )
-          throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Tree item belongs to another TreeDataSet" );
+      if( item != null )
+      {
+         if( item.getDataSet() != this )
+            throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Tree item belongs to another TreeDataSet" );
+
+         if( !containsItem(item) )
+            throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Tree item is not contained in this TreeDataSet" );
+      }
 
       if( item == currentItem )
           return false;
 
-      ITreeDataSetItem<P> oldItem = currentItem;
+      final ITreeDataSetItem<P> oldItem = currentItem;
 
       currentItem = item;
 
-      fireNavigationEvent( oldItem, currentItem );
+      fireNavigationEvent(oldItem, currentItem);
 
       return true;
    }
-
 
    /** */
    protected boolean clearCurrentItem() {

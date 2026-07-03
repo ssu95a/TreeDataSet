@@ -192,14 +192,15 @@ public class SQLTreeDataSet<P> extends AbstractTreeDataSet<P> {
     }
 
     /** */
-    public void setRootIdValues( List<Comparable<?>> riv )
+    public void setRootIdValues(List<Comparable<?>> rootIdValues)
     {
-        if( riv == null )
-            this.rootIdValues = ROOT_NULL_VALUE;
-        else
+        if( rootIdValues == null )
         {
-            this.rootIdValues = riv;
+            this.rootIdValues = ROOT_NULL_VALUE;
+            return;
         }
+
+        this.rootIdValues = Collections.unmodifiableList( new ArrayList<>(rootIdValues) );
     }
 
     /** */
