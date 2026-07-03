@@ -559,7 +559,7 @@ public class SQLTreeDataSet<P> extends AbstractTreeDataSet<P> {
     }
 
     /** Обновить текущую запись из БД */
-    public void refreshCurrentItemFromDB( boolean refreshDependentData, Consumer<SQLTreeDataSet<P>> onNoDataFound  )
+    public void refreshCurrentItemFromDB( boolean refreshDependentData, Consumer<SQLTreeDataSet<P>> onNoDataFound )
     {
         try {
 
@@ -570,57 +570,62 @@ public class SQLTreeDataSet<P> extends AbstractTreeDataSet<P> {
 
             final IEntityProperty<P, ?> idProperty = getCompositeAdapter().getIdProperty();
 
+            final Object currentId = idProperty.invokeGetter(currentItem.getValue());
+
+            if( currentId == null )
+                throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Cannot refresh tree item with null ID" );
+
+            final String idColumn = idProperty.getColumnInfo().getName();
+
             final String refreshSql = prepareCompleteSql(ROW_DATA);
 
-            ISQLDataReader<P> recordReader = null;
-
-            try {
-                recordReader = new JDBCDataReader( getTaskContextForUse().getConnection(), refreshSql, getRowMapper(), getRowClass(), isSupportMark( ) );
-            }catch( Throwable th ) {
-                throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Error while preparing SQL statement to read record", th );
-            }
-
             final IParameters prm = new ParametersByName() {
-                final IParameters p = getParameters();
+
+                final IParameters parameters = getParameters();
+
                 @Override
-                public Object getParameter( String parameterName ) {
-                    if( idProperty.getColumnInfo().getName().equalsIgnoreCase(parameterName) )
-                        return idProperty.invokeGetter( currentItem.getValue() );
-                    return p.getParameter(parameterName);
+                public Object getParameter(String parameterName) {
+
+                    if (idColumn.equalsIgnoreCase(parameterName))
+                        return currentId;
+
+                    return parameters.getParameter(parameterName);
                 }
+
                 @Override
-                public Object getParameter( int index ) {
-                    return p.getParameter(index);
+                public Object getParameter(int index) {
+                    return parameters.getParameter(index);
                 }
             };
 
-            recordReader.executeQuery( prm );
+            try( final JDBCDataReader<P> recordReader = new JDBCDataReader<>( getTaskContextForUse().getConnection(), refreshSql, getRowMapper(), getRowClass(), isSupportMark() ) )
+            {
+                recordReader.executeQuery(prm);
 
-            List<P> item = recordReader.getNextPage(1);
+                final List<P> items = recordReader.getNextPage(1);
 
-            if( !item.isEmpty() ) {
+                if (!items.isEmpty()) {
 
-                List<ITreeDataSetItem<P>> l = Collections.singletonList(currentItem);
+                    final List<ITreeDataSetItem<P>> eventItems = Collections.singletonList(currentItem);
 
-                if( refreshDependentData )
-                    fireRowsEvent( new TreeDataSetRowsEvent<P>( this, true, REFRESH, l, -1 ) );
+                    if( refreshDependentData )
+                        fireRowsEvent( new TreeDataSetRowsEvent<>( this, true, REFRESH, eventItems, -1 ) );
 
-                P newValue = item.get(0);
+                    currentItem.setValue(items.get(0));
 
-                currentItem.setValue( newValue );
-
-                if( refreshDependentData )
-                    fireRowsEvent( new TreeDataSetRowsEvent<P>( this, false, REFRESH, l, -1 ) );
-            }
-            else {
-                if( onNoDataFound != null )
-                    onNoDataFound.accept(this);
+                    if( refreshDependentData )
+                        fireRowsEvent( new TreeDataSetRowsEvent<>( this, false, REFRESH, eventItems, -1 ) );
+                }
                 else
-                    JInvDbException.throwNoDataFound( refreshSql, Collections.emptyList() );
+                {
+                    if( onNoDataFound != null )
+                        onNoDataFound.accept(this);
+                    else
+                        JInvDbException.throwNoDataFound( refreshSql, Collections.emptyList() );
+                }
             }
-
         }
-        catch( Throwable th ) {
+        catch (Throwable th) {
             throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Error on refresh current treeItem data from DB. RowClass = " + getRowClass(), th );
         }
     }

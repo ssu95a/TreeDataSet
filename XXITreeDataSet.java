@@ -381,11 +381,11 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
         try {
 
             final CompositeAdapter<P, ?> ca = getCompositeAdapter();
-            final List<Comparable<?>> idList = new ArrayList<>();
+            final List<Comparable<?>> idsList = new ArrayList<>();
 
             traversal(item -> {
 
-                if( item == null || !(item.getValue() instanceof IMarkable) )
+                if( item == null || !( item.getValue() instanceof IMarkable ) )
                     return true;
 
                 if( leafOnly && !item.isLeaf() )
@@ -401,22 +401,22 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
                     if( id == null )
                         throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Cannot mark row with null ID. Class: " + value.getClass().getName() );
 
-                    idList.add(id);
+                    idsList.add(id);
                 }
 
                 return true;
             });
 
-            if( idList.isEmpty() )
+            if( idsList.isEmpty() )
                 return;
 
             fireMarkDataSetEvent( MARK_ALL, true, leafOnly );
 
-            XXIDsMarkerDao.markAll( getTaskContextForUse(), getOrCreateMarkerId(), markDescriptor, idList );
+            XXIDsMarkerDao.markAll( getTaskContextForUse(), getOrCreateMarkerId(), markDescriptor, idsList );
 
             super.executeQuery();
 
-            fireMarkDataSetEvent(MARK_ALL, false, leafOnly);
+            fireMarkDataSetEvent( MARK_ALL, false, leafOnly);
         }
         catch (Throwable th) {
             throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Error on markAll", th );
