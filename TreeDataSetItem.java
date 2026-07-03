@@ -168,25 +168,19 @@ public class TreeDataSetItem<P> implements ITreeDataSetItem<P> {
 
    /** */
    @Override
-   public void setValue(P v) {
+   public void setValue(P v)
+   {
+      if( value == v)
+          return;
 
-      if (!U.equals(value, v)) {
-         final P oldValue = this.value;
-         this.value = v;
+      final P oldValue = value;
 
-         ITreeDataSet<P> ds = getDataSet();
+      value = v;
 
-         if (ds != null) {
-            ds.fireItemEvent(
-                    new TreeDataSetItemEvent<>(
-                            this,
-                            false,
-                            oldValue,
-                            v
-                    )
-            );
-         }
-      }
+      final ITreeDataSet<P> ds = getDataSet();
+
+      if( ds != null )
+          ds.fireItemEvent( new TreeDataSetItemEvent<>( this, false, oldValue, v ) );
    }
 
    /** */

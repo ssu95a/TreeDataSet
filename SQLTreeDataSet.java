@@ -568,9 +568,13 @@ public class SQLTreeDataSet<P> extends AbstractTreeDataSet<P> {
             if( currentItem == null || currentItem.getValue() == null )
                 return;
 
-            final IEntityProperty<P, ?> idProperty = getCompositeAdapter().getIdProperty();
+            final CompositeAdapter<P, ?> adapter = getCompositeAdapter();
+            final IEntityProperty<P, ?> idProperty = adapter.getIdProperty();
 
-            final Object currentId = idProperty.invokeGetter(currentItem.getValue());
+            final P oldValue = currentItem.getValue();
+
+            final Comparable<?> currentId = adapter.getId(oldValue);
+            final Comparable<?> currentParentId = adapter.getParentId(oldValue);
 
             if( currentId == null )
                 throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Cannot refresh tree item with null ID" );
@@ -598,27 +602,48 @@ public class SQLTreeDataSet<P> extends AbstractTreeDataSet<P> {
                 }
             };
 
-            try( final JDBCDataReader<P> recordReader = new JDBCDataReader<>( getTaskContextForUse().getConnection(), refreshSql, getRowMapper(), getRowClass(), isSupportMark() ) )
-            {
+            try (
+                    final JDBCDataReader<P> recordReader =
+                            new JDBCDataReader<>(
+                                    getTaskContextForUse().getConnection(),
+                                    refreshSql,
+                                    getRowMapper(),
+                                    getRowClass(),
+                                    isSupportMark()
+                            )
+            ) {
                 recordReader.executeQuery(prm);
 
-                final List<P> items = recordReader.getNextPage(1);
+                final List<P> items =
+                        recordReader.getNextPage(1);
 
                 if (!items.isEmpty()) {
+
+                    final P newValue = items.get(0);
+
+                    final Comparable<?> refreshedId = adapter.getId(newValue);
+
+                    final Comparable<?> refreshedParentId = adapter.getParentId(newValue);
+
+                    if( !U.equals(currentId, refreshedId) )
+                        throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Refreshed row ID differs from current tree item ID. " + "Current: " + currentId + ", refreshed: " + refreshedId );
+
+                    if (!U.equals(currentParentId, refreshedParentId))
+                        throw new TreeDataSetException( Tags.PRODUCT_LABEL + "Tree item parent ID changed during refresh. " + "Current: " + currentParentId + ", refreshed: " + refreshedParentId + ". Use executeQuery() to rebuild tree structure" );
 
                     final List<ITreeDataSetItem<P>> eventItems = Collections.singletonList(currentItem);
 
                     if( refreshDependentData )
                         fireRowsEvent( new TreeDataSetRowsEvent<>( this, true, REFRESH, eventItems, -1 ) );
 
-                    currentItem.setValue(items.get(0));
+                    currentItem.setValue(newValue);
 
                     if( refreshDependentData )
                         fireRowsEvent( new TreeDataSetRowsEvent<>( this, false, REFRESH, eventItems, -1 ) );
                 }
                 else
                 {
-                    if( onNoDataFound != null )
+                    if (onNoDataFound != null)
                         onNoDataFound.accept(this);
                     else
                         JInvDbException.throwNoDataFound( refreshSql, Collections.emptyList() );
