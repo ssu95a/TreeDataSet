@@ -197,37 +197,47 @@ public class TreeDataSetItem<P> implements ITreeDataSetItem<P> {
    public void executeQuery() {
    }
 
-   /** */
-   private void attachChild(ITreeDataSetItem<P> child) {
 
+   /** */
+   private void attachChild(ITreeDataSetItem<P> child)
+   {
       Objects.requireNonNull(child, "'child' is null");
 
-      if (child == this) {
-         throw new IllegalArgumentException(
-                 "Can not add item as child of itself"
-         );
+      if( child == this )
+          throw new IllegalArgumentException( "Can not add item as child of itself");
+
+      /*
+       * Нельзя прикреплять собственного предка как child.
+       */
+      ITreeDataSetItem<P> parentItem = getParentItem();
+
+      while( parentItem != null )
+      {
+         if( parentItem == child )
+            throw new IllegalArgumentException(
+                    "Can not add ancestor item as child"
+            );
+
+         parentItem = parentItem.getParentItem();
       }
 
-      if (child instanceof TreeDataSetItem) {
+      if( child instanceof TreeDataSetItem )
+      {
          TreeDataSetItem<P> item = (TreeDataSetItem<P>) child;
 
-         if (item.parent != null && item.parent != this) {
-            throw new IllegalArgumentException(
-                    "Child item already has another parent"
-            );
-         }
+         if( item.parent != null && item.parent != this )
+            throw new IllegalArgumentException( "Child item already has another parent" );
 
-         item.parent = this;
+         item.parent  = this;
          item.dataSet = null;
       }
-      else {
-         if (child.getParentItem() != this) {
-            throw new IllegalArgumentException(
-                    "Child item has incompatible parent"
-            );
-         }
+      else
+      {
+         if( child.getParentItem() != this )
+            throw new IllegalArgumentException( "Child item has incompatible parent" );
       }
    }
+
 
    /** */
    private void detachChild(ITreeDataSetItem<P> child) {
