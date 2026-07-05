@@ -3,10 +3,7 @@ package ru.inversion.tds;
 import ru.inversion.dataset.AbstractDataSetBase;
 import ru.inversion.utils.U;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /** */
 public class TreeDataSetItem<P> implements ITreeDataSetItem<P> {
@@ -74,33 +71,84 @@ public class TreeDataSetItem<P> implements ITreeDataSetItem<P> {
       }
    }
 
+
+   /** */
+   private void validateChildForAttach(ITreeDataSetItem<P> child)
+   {
+      Objects.requireNonNull(child, "'child' is null");
+
+      if( child == this )
+         throw new IllegalArgumentException(
+                 "Can not add item as child of itself"
+         );
+
+      ITreeDataSetItem<P> parentItem = getParentItem();
+
+      while( parentItem != null )
+      {
+         if( parentItem == child )
+            throw new IllegalArgumentException(
+                    "Can not add ancestor item as child"
+            );
+
+         parentItem = parentItem.getParentItem();
+      }
+
+      if( child instanceof TreeDataSetItem )
+      {
+         TreeDataSetItem<P> item =
+                 (TreeDataSetItem<P>) child;
+
+         if( item.parent != null && item.parent != this )
+            throw new IllegalArgumentException(
+                    "Child item already has another parent"
+            );
+      }
+      else if( child.getParentItem() != this )
+      {
+         throw new IllegalArgumentException(
+                 "Child item has incompatible parent"
+         );
+      }
+   }
+
    /** */
    @Override
    public void addChildrenAt(
            int position,
            List<ITreeDataSetItem<P>> newItems
-   ) {
-      if (newItems == null || newItems.isEmpty()) {
+   )
+   {
+      if( newItems == null || newItems.isEmpty() )
          return;
-      }
 
       checkChildrenCollection();
 
       int safePosition = position;
 
-      if (safePosition < 0) {
-         safePosition = 0;
+      if( safePosition < 0 )
+          safePosition = 0;
+
+      if( safePosition > children().size() )
+          safePosition = children().size();
+
+      final List<ITreeDataSetItem<P>> items = new ArrayList<>(newItems.size());
+
+      for( ITreeDataSetItem<P> item : newItems )
+      {
+         validateChildForAttach(item);
+
+         if( children().contains(item) || items.contains(item) )
+            throw new IllegalArgumentException( "Child item is already attached to this parent" );
+
+         items.add(item);
+
       }
 
-      if (safePosition > children().size()) {
-         safePosition = children().size();
-      }
+      for( ITreeDataSetItem<P> item : items )
+           attachChild(item);
 
-      for (ITreeDataSetItem<P> item : newItems) {
-         attachChild(item);
-      }
-
-      children().addAll(safePosition, newItems);
+      children().addAll( safePosition, items );
    }
 
    /** */
@@ -201,43 +249,16 @@ public class TreeDataSetItem<P> implements ITreeDataSetItem<P> {
    /** */
    private void attachChild(ITreeDataSetItem<P> child)
    {
-      Objects.requireNonNull(child, "'child' is null");
-
-      if( child == this )
-          throw new IllegalArgumentException( "Can not add item as child of itself");
-
-      /*
-       * Нельзя прикреплять собственного предка как child.
-       */
-      ITreeDataSetItem<P> parentItem = getParentItem();
-
-      while( parentItem != null )
-      {
-         if( parentItem == child )
-            throw new IllegalArgumentException(
-                    "Can not add ancestor item as child"
-            );
-
-         parentItem = parentItem.getParentItem();
-      }
+      validateChildForAttach(child);
 
       if( child instanceof TreeDataSetItem )
       {
          TreeDataSetItem<P> item = (TreeDataSetItem<P>) child;
 
-         if( item.parent != null && item.parent != this )
-            throw new IllegalArgumentException( "Child item already has another parent" );
-
-         item.parent  = this;
-         item.dataSet = null;
-      }
-      else
-      {
-         if( child.getParentItem() != this )
-            throw new IllegalArgumentException( "Child item has incompatible parent" );
+         item.parent = this;
+         item.dataSet= null;
       }
    }
-
 
    /** */
    private void detachChild(ITreeDataSetItem<P> child) {
