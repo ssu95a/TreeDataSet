@@ -347,7 +347,7 @@ public abstract class AbstractTreeDataSet<P> implements ITreeDataSet<P> {
         if( rootList.size() == 1 )
             return rootList.get(0);
 
-        throw new IllegalStateException(Tags.PRODUCT_LABEL + "Many root items" );
+        throw new IllegalStateException( Tags.PRODUCT_LABEL + "Many root items" );
     }
 
     /** */
