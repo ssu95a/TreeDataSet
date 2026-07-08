@@ -80,6 +80,7 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
             markListeners.fire( new TreeDataSetMarkEvent<>( this, markAction, before, markedCount, leafOnly) );
     }
 
+
     /**
      * Формирование события связанного с установлением или снятием пометки для одной записи.
      * @param markAction
@@ -369,12 +370,8 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
     /** */
     public boolean isMarkItem( ITreeDataSetItem<P> item )
     {
-
-        if (!isSupportMark()
-                || item == null
-                || item.getDataSet() != this) {
+        if( !isSupportMark() || item == null || item.getDataSet() != this)
             return false;
-        }
 
         final P value = item.getValue();
 
@@ -456,7 +453,7 @@ public class XXITreeDataSet<P> extends SQLTreeDataSet <P> {
 
         try {
 
-            fireMarkDataSetEvent(UNMARK_ALL, true, false);
+            fireMarkDataSetEvent( UNMARK_ALL, true, false );
 
             XXIDsMarkerDao.unMarkAllRow( getTaskContextForUse(), getMarkerId(), markDescriptor );
 
